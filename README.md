@@ -1,7 +1,14 @@
-# BioBERT
+# BioBERT-Docker
 This repository provides the code for fine-tuning BioBERT, a biomedical language representation model designed for biomedical text mining tasks such as biomedical named entity recognition, relation extraction, question answering, etc.
 Please refer to our paper [BioBERT: a pre-trained biomedical language representation model for biomedical text mining](http://doi.org/10.1093/bioinformatics/btz682) for more details.
 This project is done by [DMIS-Lab](https://dmis.korea.ac.kr).
+
+## Containerization
+Build $ Run
+```
+$ docker build -t biobert .
+$ docker run --gpus all -it biobert /bin/bash
+```
 
 ## Download
 We provide five versions of pre-trained weights. Pre-training was based on the [original BERT code](https://github.com/google-research/bert) provided by Google, and training details are described in our paper. Currently available versions of pre-trained weights are as follows:
