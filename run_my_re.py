@@ -1027,9 +1027,9 @@ def main(_):
 
     result = []
 
-    for item in tqdm(estimator.predict(input_fn=predict_input_fn)):
+    for item in tqdm(estimator.predict(input_fn=predict_input_fn), total=len(predict_examples), ascii=True):
       result.append(item)
-      print(item)
+      # print(item)
 
     df = pd.DataFrame(result)
     df.to_csv('result.csv')
