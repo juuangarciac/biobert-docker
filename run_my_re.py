@@ -25,8 +25,6 @@ import modeling
 import optimization
 import tokenization
 import tensorflow as tf
-from tqdm import tqdm
-
 import pandas as pd
 
 flags = tf.flags
@@ -366,7 +364,11 @@ class BioBERTProcessor(DataProcessor):
         continue
       guid = "%s-%s" % (set_type, i)
       if set_type == "test":
-        text_a = tokenization.convert_to_unicode(line[1])
+        try:
+          text_a = tokenization.convert_to_unicode(line[1])
+        except:
+          print(i, line)
+          quit()
         label = "0"
       else:
         text_a = tokenization.convert_to_unicode(line[0])
@@ -970,11 +972,6 @@ def main(_):
   train_examples = None
   num_train_steps = None
   num_warmup_steps = None
-  if FLAGS.do_train:
-    train_examples = processor.get_train_examples(FLAGS.data_dir)
-    num_train_steps = int(
-        len(train_examples) / FLAGS.train_batch_size * FLAGS.num_train_epochs)
-    num_warmup_steps = int(num_train_steps * FLAGS.warmup_proportion)
 
   model_fn = model_fn_builder(
       bert_config=bert_config,
@@ -985,7 +982,6 @@ def main(_):
       num_warmup_steps=num_warmup_steps,
       use_tpu=FLAGS.use_tpu,
       use_one_hot_embeddings=FLAGS.use_tpu)
-
   # If TPU is not available, this will fall back to normal Estimator on CPU
   # or GPU.
   estimator = tf.contrib.tpu.TPUEstimator(
@@ -1026,29 +1022,21 @@ def main(_):
         drop_remainder=predict_drop_remainder)
 
     result = []
+    size = len(predict_examples)
+    index = 0
 
-    for item in tqdm(estimator.predict(input_fn=predict_input_fn), total=len(predict_examples), ascii=True):
+    for item in estimator.predict(input_fn=predict_input_fn):
+      item['index'] = index
+      item['label'] = item['probabilities'][1] >= 0.5
       result.append(item)
-      # print(item)
-
+      
+      index = index + 1
+      
+      if(size - index < 10000 or index%1000 == 0):
+          print(str(index) + "/" + str(size))
+    
     df = pd.DataFrame(result)
-    df.to_csv('result.csv')
-
-    # output_predict_file = os.path.join(FLAGS.output_dir, "test_results.tsv")
-    # with tf.gfile.GFile(output_predict_file, "w") as writer:
-    #   num_written_lines = 0
-    #   tf.logging.info("***** Predict results *****")
-    #   for (i, prediction) in enumerate(result):
-    #     probabilities = prediction["probabilities"]
-    #     if i >= num_actual_predict_examples:
-    #       break
-    #     output_line = "\t".join(
-    #         str(class_probability)
-    #         for class_probability in probabilities) + "\n"
-    #     writer.write(output_line)
-    #     num_written_lines += 1
-    # assert num_written_lines == num_actual_predict_examples
-
+    df.to_csv('result.csv', index=False)
 
 if __name__ == "__main__":
   flags.mark_flag_as_required("data_dir")
